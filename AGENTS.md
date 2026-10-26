@@ -12,9 +12,11 @@ src/OldenEra.Generator/                       net10.0 class library
 src/OldenEra.Web/                             net10.0 Blazor WebAssembly host
   Pages/, Components/, Services/              deployed to GitHub Pages
 src/OldenEra.TemplateEditor/                  net10.0-windows WPF host
-  MainWindow.xaml(.cs), Themes/               Steam auto-detect, .oetgs file dialogs
+  ViewModels/, Views/, Themes/, Services/     Steam auto-detect, .oetgs file dialogs
 tests/OldenEra.TemplateEditor.Tests/          net10.0 xUnit tests (cross-platform)
 tests/OldenEra.Generator.Tests/               net10.0 xUnit tests (cross-platform)
+tests/OldenEra.Web.Tests/                     net10.0 xUnit smoke tests (not in the .slnx)
+tests/e2e/                                    Playwright TypeScript suite (npm, not .NET)
 ```
 
 The main solution is:
@@ -23,7 +25,7 @@ The main solution is:
 dotnet build OldenEra.slnx
 ```
 
-The test project uses xUnit and targets the generator/model layer plus the SkiaSharp renderer. It targets plain `net10.0` and runs on any OS — pixel-sampling tests decode PNGs via `SkiaSharp.SKBitmap`.
+The .NET test projects use xUnit and target the generator/model layer plus the SkiaSharp renderer. They target plain `net10.0` and run on any OS — pixel-sampling tests decode PNGs via `SkiaSharp.SKBitmap`.
 
 Example templates are stored in:
 
@@ -38,7 +40,7 @@ Use those examples as the primary local reference for the `.rmg.json` shape and 
 - **Generator logic, DTOs, preview rendering** → `src/OldenEra.Generator/`. Pure C#, no UI dependencies. Both hosts call into this.
 - **Steam install detection, file-save dialogs, .oetgs file I/O, custom title bar** → `src/OldenEra.TemplateEditor/`. Anything that requires WPF, the Windows registry, or local file system access stays here.
 - **Browser settings persistence (localStorage), file download via JS interop, update banner** → `src/OldenEra.Web/`. Anything sandbox-bound to the browser stays here.
-- **Generation tests, JSON-shape tests, renderer structural tests** → `tests/OldenEra.TemplateEditor.Tests/` (Windows-only) and `tests/OldenEra.Generator.Tests/` (cross-platform).
+- **Generation tests, JSON-shape tests, renderer structural tests** → `tests/OldenEra.TemplateEditor.Tests/` and `tests/OldenEra.Generator.Tests/` (both cross-platform).
 
 When porting a new feature: implement the core in the library, expose it through public API, then wire up each host.
 
@@ -48,6 +50,20 @@ This is a fork of `KhanDevelopsGames/Olden-Era---Template-Generator`. The curren
 state — last reviewed upstream commit, per-commit triage, and the sync workflow — lives
 in [`UPSTREAM.md`](UPSTREAM.md) at the repo root. Update it whenever you classify or
 port new upstream commits.
+
+## Repository docs
+
+- `docs/COMPLETENESS-TODO.md` — the shared task queue. Agents pick the next unowned, unblocked task, work it end-to-end (one task per PR), and update its **Status**/**Owner** lines as part of that PR.
+- `docs/field-help.yaml` — single source for inline field help. Both hosts read it at startup via `FieldHelpCatalog` (Web `title=` attributes, WPF `ToolTip`s); add or update help text there instead of hardcoding tooltips in either host.
+- `docs/plans/` — dated design/implementation plan documents.
+
+## CI workflows
+
+- `tests.yml` — `dotnet build` + `dotnet test OldenEra.slnx` on every push/PR (`ubuntu-latest`, installs `wasm-tools`).
+- `e2e.yml` — Playwright e2e against the Web host on every push/PR.
+- `deploy-web.yml` — deploys the Web host to GitHub Pages.
+- `refresh-community-data.yml` — weekly (Mondays 08:00 UTC) community-datamine re-pull; opens a PR when the JSON changed.
+- `release.yml` — tag-triggered Windows release (see "Cutting a release" below).
 
 ## Discovering Olden Era `.rmg.json` Files
 
@@ -119,6 +135,11 @@ If `dotnet` is not on PATH in the current shell, use the standard SDK path expli
 ```
 
 For changes to generator logic, prefer focused unit tests around the model/service behavior rather than only testing through the UI.
+
+### Additional test suites
+
+- `tests/OldenEra.Web.Tests/` is a net10.0 xUnit smoke project that is **not** referenced by `OldenEra.slnx`, so `dotnet test OldenEra.slnx` does not run it. Run it explicitly with `dotnet test tests/OldenEra.Web.Tests/OldenEra.Web.Tests.csproj`.
+- `tests/e2e/` is a Playwright TypeScript suite (specs in `tests/e2e/specs/`). Run with `cd tests/e2e && npm ci && npm test`; the Playwright config launches the Web host itself (`dotnet run` at `http://localhost:5230`, Release config) and reuses an already-running server locally. Requires the `wasm-tools` workload like any Web build; CI runs it via `.github/workflows/e2e.yml`.
 
 ## Visual Testing
 
@@ -230,7 +251,7 @@ The script fetches `docs/data.js`, `docs/skills-data.js`, and `docs/spells-data.
 - `dotnet test tests/OldenEra.Generator.Tests/OldenEra.Generator.Tests.csproj --filter CommunityCatalog` should still pass. The tests assert structural invariants (108 heroes, 6 factions, every hero belongs to a known faction, etc.); a failure usually means upstream renamed a field or changed schema.
 - `git diff src/OldenEra.Generator/CommunityData/*.json` to eyeball what changed before committing.
 
-If upstream becomes unavailable, the embedded JSON keeps working — only re-fetching needs network access.
+If upstream becomes unavailable, the embedded JSON keeps working — only re-fetching needs network access. A scheduled workflow (`refresh-community-data.yml`) re-runs the script weekly and opens a PR when files changed.
 
 ## Debugging Blazor errors
 

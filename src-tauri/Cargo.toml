@@ -1,0 +1,23 @@
+[package]
+name = "olden-era-templates"
+version = "0.8.0"
+description = "Генератор случайных карт для Heroes of Might and Magic: Olden Era"
+authors = ["rannes"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-process = "2"
+tauri-plugin-updater = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[lib]
+name = "olden_era_templates_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
