@@ -46,10 +46,25 @@ test("модалка пресетов открывается и содержит
   await expect(page.locator(".modal")).toHaveCount(0);
 });
 
-test("переключение наhub-топологию показывает слайдеры хаба", async ({ page }) => {
+test("переключение на hub-топологию показывает слайдеры хаба", async ({ page }) => {
   await page.goto("/");
   await page.locator(".section-nav button", { hasText: "Топология" }).click();
   const tile = page.locator(".topology-tile", { hasText: "Хаб" });
   await tile.click();
   await expect(tile).toHaveClass(/active/);
+});
+
+test("AI-ассистент: панель открывается, модалка конфига работает", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /AI/ }).click();
+  await expect(page.locator(".ai-col")).toBeVisible();
+  await expect(page.locator(".ai-input-row textarea")).toBeVisible();
+  // Быстрые подсказки видны до первого сообщения
+  await expect(page.locator(".ai-quick .chip").first()).toBeVisible();
+  // Конфиг-модалка: поля адреса/ключа/модели
+  await page.locator(".ai-header button[title='Настройки ИИ']").click();
+  await expect(page.locator(".modal")).toBeVisible();
+  await expect(page.locator(".modal input[type='password']")).toBeVisible();
+  await page.getByRole("button", { name: /Отмена/ }).click();
+  await expect(page.locator(".modal")).toHaveCount(0);
 });

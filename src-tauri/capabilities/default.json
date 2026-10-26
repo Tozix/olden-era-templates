@@ -17,6 +17,13 @@
     "fs:allow-exists",
     "opener:default",
     "process:default",
-    "updater:default"
+    "updater:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "http://**" },
+        { "url": "https://**" }
+      ]
+    }
   ]
 }

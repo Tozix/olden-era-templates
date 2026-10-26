@@ -20,10 +20,10 @@ import { PresetPickerModal } from "./components/PresetPickerModal";
 import { encodeSettings, MAX_ENCODED_LENGTH, tryDecodeSettings } from "./generator/settingsShareCodec";
 import { toJsonIndented, toJsonCompact } from "./generator/json";
 import { sanitizeTemplateName } from "./generator/previewSidecar";
-import { generate } from "./generator/templateGenerator";
-import { renderPreview } from "./generator/renderer";
 import { getSidecarPath } from "./generator/previewSidecar";
-import { fromFile } from "./generator/settingsMapper";
+import { runGeneration } from "./state/generationActions";
+import { useAssistant } from "./state/assistantStore";
+import { AiChatPanel } from "./components/AiChatPanel";
 import { MapSettingsPanel } from "./components/panels/MapSettingsPanel";
 import { TopologyPanel } from "./components/panels/TopologyPanel";
 import { ZonesPanel } from "./components/panels/ZonesPanel";
@@ -45,10 +45,16 @@ export default function App() {
 
   const [section, setSection] = useState<SectionKey>("map");
   const [presetModalOpen, setPresetModalOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const steamDir = useRef<string | null>(null);
   const { toasts, push } = useToasts();
+  const assistantInit = useAssistant((s) => s.init);
   useUndoRedoHotkeys(undo, redo);
+
+  useEffect(() => {
+    void assistantInit();
+  }, [assistantInit]);
 
   const experimentalVisible = useApp((s) => s.experimentalVisible());
 
@@ -80,36 +86,21 @@ export default function App() {
   const blockers = issues.filter((i) => i.severity === "error");
 
   const onGenerate = async () => {
-    if (blockers.length > 0) {
-      push(T.validationBlockers, "error");
-      return;
-    }
-    const s = settings();
-    const { setGenerating, setGenerationResult } = useApp.getState();
-    setGenerating(true);
-    try {
-      const template = generate(s);
-      const rendered = await renderPreview(template, s.topology);
-      setGenerationResult(template, rendered.dataUrl, rendered.bytes);
-    } catch (e) {
-      push(`${T.previewFailed}: ${String(e)}`, "error");
-    } finally {
-      setGenerating(false);
-    }
+    const res = await runGeneration();
+    if (res.blockers?.length) push(T.validationBlockers, "error");
+    if (res.error) push(`${T.previewFailed}: ${res.error}`, "error");
   };
 
   const onSaveTemplate = async () => {
     const state = useApp.getState();
     let template = state.template;
     if (!template) {
-      if (blockers.length > 0) {
-        push(T.validationBlockers, "error");
+      const res = await runGeneration();
+      if (!res.ok || !res.template) {
+        if (res.blockers?.length) push(T.validationBlockers, "error");
         return;
       }
-      const s = settings();
-      template = generate(s);
-      const rendered = await renderPreview(template, s.topology);
-      state.setGenerationResult(template, rendered.dataUrl, rendered.bytes);
+      template = res.template;
     }
     const name = sanitizeTemplateName(file.templateName);
     const picked = await saveTemplateFileDialog(name, steamDir.current);
@@ -231,6 +222,7 @@ export default function App() {
         <button onClick={() => void onShareCode()}>{T.toolbar.shareCode}</button>
         <button onClick={() => void onPasteCode()}>⤵</button>
         <span className="spacer" />
+        <button onClick={() => setAiOpen(!aiOpen)} title="Чат с ИИ-ассистентом">🤖 AI</button>
         <button onClick={undo} title="Ctrl/Cmd+Z">↩ {T.toolbar.undo}</button>
         <button onClick={redo} title="Ctrl+Shift+Z">↪ {T.toolbar.redo}</button>
         {isTauri() && <button onClick={() => void onCheckUpdates()}>{T.toolbar.checkUpdates}</button>}
@@ -247,6 +239,7 @@ export default function App() {
           <h2>{T.sections[section]}</h2>
           {panel}
         </div>
+        {aiOpen && <AiChatPanel onClose={() => setAiOpen(false)} />}
         <PreviewPanel onGenerate={() => void onGenerate()} generating={generating} blockers={blockers.map((b) => b.message)} onSaveTemplate={() => void onSaveTemplate()} />
       </div>
       {presetModalOpen && <PresetPickerModal onClose={() => setPresetModalOpen(false)} push={push} />}

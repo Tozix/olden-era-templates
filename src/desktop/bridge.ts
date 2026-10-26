@@ -196,3 +196,71 @@ export async function openReleasesPage(): Promise<void> {
   const opener = await import("@tauri-apps/plugin-opener");
   await opener.openUrl("https://github.com/rannes/olden-era-templates/releases/latest");
 }
+
+// ── Конфиг AI-ассистента (appData/ai-config.json; ключ не покидает машину) ──
+
+export interface AiConfig {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+}
+
+export const defaultAiConfig = (): AiConfig => ({
+  baseUrl: "https://api.openai.com/v1",
+  apiKey: "",
+  model: "gpt-4o-mini",
+});
+
+const AI_CONFIG_FILE = () =>
+  Promise.resolve().then(async () => {
+    const { appDataDir, join } = await import("@tauri-apps/api/path");
+    return join(await appDataDir(), "OldenEraTemplates", "ai-config.json");
+  });
+
+const AI_LS_KEY = "oldenEra.aiConfig";
+
+export async function loadAiConfig(): Promise<AiConfig> {
+  const base = defaultAiConfig();
+  let raw: string | null = null;
+  if (isTauri()) {
+    try {
+      const path = await AI_CONFIG_FILE();
+      if (await exists(path)) raw = await readTextFile(path);
+    } catch {
+      /* fallthrough to localStorage */
+    }
+  }
+  if (raw === null) {
+    try {
+      raw = localStorage.getItem(AI_LS_KEY);
+    } catch {
+      raw = null;
+    }
+  }
+  if (!raw) return base;
+  try {
+    const parsed = JSON.parse(raw) as Partial<AiConfig>;
+    return { ...base, ...parsed };
+  } catch {
+    return base;
+  }
+}
+
+export async function saveAiConfig(config: AiConfig): Promise<void> {
+  const json = JSON.stringify(config);
+  if (isTauri()) {
+    try {
+      const path = await AI_CONFIG_FILE();
+      await ensureDirRecursive(path.slice(0, path.lastIndexOf("/")));
+      await writeTextFile(path, json);
+      return;
+    } catch {
+      /* fallthrough */
+    }
+  }
+  try {
+    localStorage.setItem(AI_LS_KEY, json);
+  } catch {
+    /* приватный режим — молча */
+  }
+}
