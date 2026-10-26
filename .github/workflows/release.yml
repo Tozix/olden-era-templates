@@ -26,9 +26,13 @@ jobs:
       matrix:
         settings:
           - os: windows-latest
+            args: ""
           - os: macos-latest # Apple Silicon
-          - os: macos-13 # Intel
+            args: ""
+          - os: macos-latest # Intel: кросс-компиляция с ARM-раннера (macos-13 доживает)
+            args: "--target x86_64-apple-darwin"
           - os: ubuntu-22.04
+            args: ""
     runs-on: ${{ matrix.settings.os }}
     steps:
       - uses: actions/checkout@v5
@@ -41,6 +45,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.args != '' && 'x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -64,6 +70,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          args: ${{ matrix.settings.args }}
           releaseName: "Olden Era Templates ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
           releaseBody: "Десктопный генератор шаблонов для Heroes of Might and Magic: Olden Era (Windows / macOS / Linux)."
           releaseDraft: false
