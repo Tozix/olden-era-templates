@@ -211,7 +211,16 @@ export default function App() {
   return (
     <div className="app">
       <div className="toolbar">
-        <span className="title">{T.appTitle}</span>
+        <span className="title">
+          <svg viewBox="0 0 1024 1024" aria-hidden="true">
+            <polygon
+              fill="currentColor"
+              points="512,128 556,440 760,476 596,498 782,512 596,526 760,548 556,584 512,896 468,584 264,548 428,526 242,512 428,498 264,476 468,440"
+            />
+            <circle cx="512" cy="512" r="430" fill="none" stroke="currentColor" strokeWidth="36" opacity="0.45" />
+          </svg>
+          Olden Era Templates
+        </span>
         <span className="hint">{T.versionLabel}</span>
         {dirty && <span className="dirty-dot" title="Есть несохранённые изменения">●</span>}
         <button onClick={() => { if (window.confirm(T.confirmReset)) resetToDefaults(); }}>{T.toolbar.new}</button>

@@ -2,7 +2,7 @@
 
 export const T = {
   appTitle: "Olden Era — Генератор шаблонов",
-  versionLabel: "v0.8.0",
+  versionLabel: "v1.0.0",
 
   sections: {
     map: "Карта",

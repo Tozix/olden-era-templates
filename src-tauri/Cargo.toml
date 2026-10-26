@@ -1,6 +1,6 @@
 [package]
 name = "olden-era-templates"
-version = "0.8.0"
+version = "1.0.0"
 description = "Генератор случайных карт для Heroes of Might and Magic: Olden Era"
 authors = ["rannes"]
 edition = "2021"

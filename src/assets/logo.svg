@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#26221a"/>
+      <stop offset="70%" stop-color="#1a1712"/>
+      <stop offset="100%" stop-color="#100e0b"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e6bd6d"/>
+      <stop offset="55%" stop-color="#d4a557"/>
+      <stop offset="100%" stop-color="#b1843c"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="180" fill="url(#bg)"/>
+
+  <!-- двойное кольцо астролябии -->
+  <circle cx="512" cy="512" r="404" fill="none" stroke="#d4a557" stroke-width="11" opacity="0.92"/>
+  <circle cx="512" cy="512" r="372" fill="none" stroke="#8a6d3f" stroke-width="4" opacity="0.75"/>
+
+  <!-- малая звезда (повёрнутая, приглушённая) -->
+  <polygon fill="#8a6d3f" opacity="0.8" points="
+    512,318 548,476 706,512 548,548 512,706 476,548 318,512 476,476"/>
+
+  <!-- большая компасная роза: вытянутый север -->
+  <polygon fill="url(#gold)" points="
+    512,128 556,440 760,476 596,498 782,512 596,526 760,548 556,584
+    512,896 468,584 264,548 428,526 242,512 428,498 264,476 468,440"/>
+  <polygon fill="#14110c" opacity="0.55" points="
+    512,128 556,440 512,512 468,440"/>
+  <polygon fill="#14110c" opacity="0.55" points="
+    512,896 556,584 512,512 468,584"/>
+  <polygon fill="#f2e3bd" opacity="0.9" points="
+    512,128 468,440 512,512 556,440"/>
+  <polygon fill="#f2e3bd" opacity="0.9" points="
+    512,896 596,584 512,512 468,584" opacity="0.55"/>
+
+  <!-- центр -->
+  <circle cx="512" cy="512" r="46" fill="none" stroke="#d4a557" stroke-width="7"/>
+  <circle cx="512" cy="512" r="20" fill="#e6bd6d"/>
+</svg>
