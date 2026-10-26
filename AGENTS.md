@@ -4,261 +4,73 @@ Guidance for agents working on this repository.
 
 ## Project Overview
 
-This solution generates `.rmg.json` random map template files for Heroes of Might and Magic: Olden Era. It ships in two forms backed by a shared library:
+Desktop random-map-template generator (`.rmg.json`) for Heroes of Might and Magic: Olden Era. **Tauri 2 + TypeScript (React 19 + zustand), all UI in Russian.** This is a full rewrite of the former C# (WPF + Blazor WASM) app; file formats stay compatible.
 
 ```text
-src/OldenEra.Generator/                       net10.0 class library
-  Models/, Services/                          generator + SkiaSharp PNG renderer
-src/OldenEra.Web/                             net10.0 Blazor WebAssembly host
-  Pages/, Components/, Services/              deployed to GitHub Pages
-src/OldenEra.TemplateEditor/                  net10.0-windows WPF host
-  ViewModels/, Views/, Themes/, Services/     Steam auto-detect, .oetgs file dialogs
-tests/OldenEra.TemplateEditor.Tests/          net10.0 xUnit tests (cross-platform)
-tests/OldenEra.Generator.Tests/               net10.0 xUnit tests (cross-platform)
-tests/OldenEra.Web.Tests/                     net10.0 xUnit smoke tests (not in the .slnx)
-tests/e2e/                                    Playwright TypeScript suite (npm, not .NET)
+index.html, vite.config.ts, tsconfig.json     Vite + React + TS strict (also vitest + Playwright)
+src/
+  generator/            Ported core (pure TS, no DOM): settings models, .rmg.json schema,
+    templateGenerator/    6-topology generator + experimental post-pass (port of TemplateGenerator.cs)
+    zoneContent/          zone-content subsystem (emit/resolve/cloning/validator/warnings/catalogs)
+    renderer/             layout.ts = pure layout math (node-testable); draw.ts = Canvas2D, browser-only
+    rng.ts                xoshiro256** — same-seed determinism; NOT bit-compatible with .NET
+    settingsMapper.ts     SettingsFile ↔ GeneratorSettings (legacy migrations preserved)
+    settingsValidator.ts  validation + machine field keys + one-click fixes (RU messages)
+    settingsShareCodec.ts gzip+base64url share code (fflate), lenient decode
+    communityCatalog.ts   static imports of src/data/community/*.json (game datamine)
+  data/                 community JSON, built-in presets (.oetgs), field-help.yaml (RU)
+  state/settingsStore.ts  zustand store — canonical UI state is SettingsFile (.oetgs 1:1)
+  components/panels/      all panels; RU strings co-located per file (`const T = {...}`)
+  desktop/bridge.ts       every native call (dialogs, fs, steam detect, updater) — degrades in browser
+src-tauri/              Rust: window, plugins (dialog/fs/opener/updater/process), steam_detect.rs
+tests/                  vitest (fixtures/examples = 57 shipped templates, fixtures/gamedata)
+e2e/specs/              Playwright against `vite preview` on port 5230
+scripts/fetch-from-alcaras.py   community-data refresh (stdlib Python)
 ```
 
-The main solution is:
-
-```powershell
-dotnet build OldenEra.slnx
-```
-
-The .NET test projects use xUnit and target the generator/model layer plus the SkiaSharp renderer. They target plain `net10.0` and run on any OS — pixel-sampling tests decode PNGs via `SkiaSharp.SKBitmap`.
-
-Example templates are stored in:
-
-```text
-src/OldenEra.TemplateEditor/GameData/ExampleTemplates
-```
-
-Use those examples as the primary local reference for the `.rmg.json` shape and expected naming style.
-
-### Where each kind of code lives
-
-- **Generator logic, DTOs, preview rendering** → `src/OldenEra.Generator/`. Pure C#, no UI dependencies. Both hosts call into this.
-- **Steam install detection, file-save dialogs, .oetgs file I/O, custom title bar** → `src/OldenEra.TemplateEditor/`. Anything that requires WPF, the Windows registry, or local file system access stays here.
-- **Browser settings persistence (localStorage), file download via JS interop, update banner** → `src/OldenEra.Web/`. Anything sandbox-bound to the browser stays here.
-- **Generation tests, JSON-shape tests, renderer structural tests** → `tests/OldenEra.TemplateEditor.Tests/` and `tests/OldenEra.Generator.Tests/` (both cross-platform).
-
-When porting a new feature: implement the core in the library, expose it through public API, then wire up each host.
-
-## Tracking Upstream
-
-This is a fork of `KhanDevelopsGames/Olden-Era---Template-Generator`. The current sync
-state — last reviewed upstream commit, per-commit triage, and the sync workflow — lives
-in [`UPSTREAM.md`](UPSTREAM.md) at the repo root. Update it whenever you classify or
-port new upstream commits.
-
-## Repository docs
-
-- `docs/COMPLETENESS-TODO.md` — the shared task queue. Agents pick the next unowned, unblocked task, work it end-to-end (one task per PR), and update its **Status**/**Owner** lines as part of that PR.
-- `docs/field-help.yaml` — single source for inline field help. Both hosts read it at startup via `FieldHelpCatalog` (Web `title=` attributes, WPF `ToolTip`s); add or update help text there instead of hardcoding tooltips in either host.
-- `docs/plans/` — dated design/implementation plan documents.
-
-## CI workflows
-
-- `tests.yml` — `dotnet build` + `dotnet test OldenEra.slnx` on every push/PR (`ubuntu-latest`, installs `wasm-tools`).
-- `e2e.yml` — Playwright e2e against the Web host on every push/PR.
-- `deploy-web.yml` — deploys the Web host to GitHub Pages.
-- `refresh-community-data.yml` — weekly (Mondays 08:00 UTC) community-datamine re-pull; opens a PR when the JSON changed.
-- `release.yml` — tag-triggered Windows release (see "Cutting a release" below).
-
-## Discovering Olden Era `.rmg.json` Files
-
-Olden Era map templates are almost always located under the game's install directory:
-
-```text
-[Steam Game Install Location]\HeroesOldenEra_Data\StreamingAssets\map_templates
-```
-
-The standard Steam install location is usually:
-
-```text
-C:\Program Files (x86)\Steam\steamapps\common\Heroes of Might and Magic Olden Era\HeroesOldenEra_Data\StreamingAssets\map_templates
-```
-
-Do not assume that path always exists. Users may have installed Steam or the game on another drive, especially on systems with multiple disks or custom Steam libraries.
-
-Useful discovery checks:
-
-```powershell
-$defaultTemplates = "${env:ProgramFiles(x86)}\Steam\steamapps\common\Heroes of Might and Magic Olden Era\HeroesOldenEra_Data\StreamingAssets\map_templates"
-Test-Path $defaultTemplates
-Get-ChildItem -Path $defaultTemplates -Filter "*.rmg.json" -ErrorAction SilentlyContinue
-```
-
-If the default path is missing, inspect Steam library locations. The primary Steam library file is usually:
-
-```text
-C:\Program Files (x86)\Steam\steamapps\libraryfolders.vdf
-```
-
-Additional libraries typically contain:
-
-```text
-[Steam Library]\steamapps\common\Heroes of Might and Magic Olden Era\HeroesOldenEra_Data\StreamingAssets\map_templates
-```
-
-A quick targeted check for common Steam library roots:
-
-```powershell
-Get-PSDrive -PSProvider FileSystem | ForEach-Object {
-    $candidate = Join-Path $_.Root "SteamLibrary\steamapps\common\Heroes of Might and Magic Olden Era\HeroesOldenEra_Data\StreamingAssets\map_templates"
-    if (Test-Path $candidate) {
-        Get-Item $candidate
-    }
-}
-```
-
-Avoid broad recursive searches across entire drives unless the user asks for that; they can be slow.
-
-## Commands And Testing
-
-This is a C# solution. Before handing off changes, build the solution:
-
-```powershell
-dotnet build OldenEra.slnx
-```
-
-Unit tests are part of the normal development process. When changing behavior, always add or update focused unit tests that cover the change, then ensure the full unit test suite passes before handing off. `dotnet test OldenEra.slnx` runs both test projects (`OldenEra.TemplateEditor.Tests` and `OldenEra.Generator.Tests`):
-
-```powershell
-dotnet test OldenEra.slnx
-```
-
-If `dotnet` is not on PATH in the current shell, use the standard SDK path explicitly:
-
-```powershell
-& "C:\Program Files\dotnet\dotnet.exe" test OldenEra.slnx
-```
-
-For changes to generator logic, prefer focused unit tests around the model/service behavior rather than only testing through the UI.
-
-### Additional test suites
-
-- `tests/OldenEra.Web.Tests/` is a net10.0 xUnit smoke project that is **not** referenced by `OldenEra.slnx`, so `dotnet test OldenEra.slnx` does not run it. Run it explicitly with `dotnet test tests/OldenEra.Web.Tests/OldenEra.Web.Tests.csproj`.
-- `tests/e2e/` is a Playwright TypeScript suite (specs in `tests/e2e/specs/`). Run with `cd tests/e2e && npm ci && npm test`; the Playwright config launches the Web host itself (`dotnet run` at `http://localhost:5230`, Release config) and reuses an already-running server locally. Requires the `wasm-tools` workload like any Web build; CI runs it via `.github/workflows/e2e.yml`.
-
-## Visual Testing
-
-For UI changes, build and run the app, then visually check the affected workflow. The app should open cleanly, controls should be readable, and the expected action should work without layout breakage.
-
-Typical local run command:
-
-```powershell
-dotnet run --project src/OldenEra.TemplateEditor/OldenEra.TemplateEditor.csproj
-```
-
-When possible, open the solution in Visual Studio as part of manual verification:
-
-```powershell
-Start-Process OldenEra.slnx
-```
-
-At minimum, verify that the configured options can create a `.rmg.json` file. Generated template validation currently stops there: do not claim that generated templates are guaranteed to generate a playable map in game. In-game validation must be left to users until the project has a reliable automated or documented game-level validation workflow.
-
-## Development Notes
-
-- Keep changes scoped to the app's current C# and WPF patterns.
-- Add or update unit tests for every behavior change, and do not treat the work as complete until those tests pass.
-- Prefer structured JSON serialization/deserialization over manual string editing for template files.
-- Treat the bundled example templates as fixtures and references; do not overwrite them during ad hoc testing.
-- When saving generated files during testing, use a temporary location unless the user explicitly wants files written into their game install.
-- Be careful with paths containing spaces, especially the solution name, project directory, Steam install path, and template filenames.
-- Assume other individuals or agents may be working elsewhere in the repository at the same time. Ignore and preserve changes you did not specifically make; do not revert, overwrite, or include them in your work unless the user explicitly asks.
-
-## Cross-platform development
-
-The repo's `Directory.Build.props` sets `<EnableWindowsTargeting>true</EnableWindowsTargeting>` so the WPF and test projects compile on macOS and Linux. This is a compile-only fix, not a runtime one:
-
-- ✅ `dotnet build OldenEra.slnx` works on macOS/Linux/Windows.
-- ✅ `dotnet run --project src/OldenEra.Web` works on macOS/Linux/Windows. Serves at `http://localhost:5230/`.
-- ❌ `dotnet run --project src/OldenEra.TemplateEditor` works only on Windows (`Microsoft.WindowsDesktop.App` runtime is Windows-only).
-- ✅ `dotnet test OldenEra.slnx` works on macOS/Linux/Windows. The test projects target `net10.0` and use SkiaSharp for any pixel sampling. CI runs tests on `ubuntu-latest` via `.github/workflows/tests.yml`.
-
-When working on macOS or Linux: `dotnet build` and `dotnet test` are the local validation gates. The WPF app itself still requires Windows to run, but its logic is covered by the cross-platform test project.
-
-## Blazor WebAssembly: required wasm-tools workload
-
-`OldenEra.Web` uses SkiaSharp via `SkiaSharp.NativeAssets.WebAssembly`. The csproj sets `<WasmBuildNative>true</WasmBuildNative>`, which **requires** the `wasm-tools` SDK workload:
+## Commands
 
 ```bash
-dotnet workload install wasm-tools
+npm ci                 # install (Node ≥ 20; Rust via rustup for src-tauri)
+npm run dev            # vite dev server at http://localhost:5230
+npm run build          # tsc --noEmit && vite build  ← the gate; keep it green
+npm test               # vitest
+npm run e2e            # Playwright (needs npm run build first; auto-starts vite preview)
+npm run tauri dev      # full desktop app in dev mode
+npm run tauri build    # release bundles (slow first run — crates download)
+cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
-This is a one-time install (~500 MB toolchain). Without it, `dotnet build OldenEra.Web` fails with `NETSDK1147`. The CI workflow runs this install before each publish.
+CI: `tests.yml` (build+vitest on every push), `e2e.yml` (Playwright), `release.yml` (tag `v*` → tauri-action builds Windows/macOS-ARM/macOS-Intel/Linux bundles and publishes a GitHub Release with signed `latest.json`).
 
-If you ever see `System.DllNotFoundException: libSkiaSharp` at runtime in the browser, the cause is one of:
+## Hard invariants — do not break
 
-1. `<WasmBuildNative>true</WasmBuildNative>` is missing or conditional.
-2. The `wasm-tools` workload wasn't installed when the build ran.
-3. The deploy didn't actually upload the new `dotnet.native.*.wasm` (which should be ~8 MB Release / ~23 MB Debug — the size jump confirms native linking succeeded).
+1. **`.oetgs` field names are frozen.** `src/generator/settingsFile.ts` mirrors the C# `SettingsFile` JSON names byte-for-byte; users have existing files, presets and share codes depend on them. Same for `settingsMapper`'s legacy migrations (experimentalEnabled, contentDensity, balancedZonePlacement).
+2. **`.rmg.json` emission order matters.** Templates serialize via `toJsonIndented` (strips null/undefined and the `generatorPosition` render hint, 2-space indent). Keep object key insertion order mirroring the C# model property order.
+3. **Same seed ⇒ byte-identical template** (within TS, all platforms). The single `Rng` instance threads through generation exactly like C#; preserve draw order when editing `templateGenerator/`. Do not introduce `Math.random()` anywhere in `src/generator/`.
+4. **Store canonical state is `SettingsFile`.** Panels patch it; `GeneratorSettings` is derived via `fromFile()` at generate/validate time. Note: the mapper intentionally does NOT map `seed` (C# parity) — hosts handle it (`components/panels/seedPatch.ts`).
+5. **`src/generator/` has no DOM/Tauri imports** (renderer `draw.ts` and `desktop/` are the exceptions, by design). `tests/helpers/gameDataCatalog.ts` is node-fs and test-only — keep it out of the app bundle.
 
-A managed-only build will still produce a deployable site, but every Skia API call throws on first use. Always exercise the actual native call path before declaring web changes done.
+## UI rules (Russian)
 
-## Cutting a release
+- All user-facing text is Russian, co-located in each panel file as `const T = {...}`. `src/i18n/ru.ts` holds shell strings only.
+- Player-facing terms (factions, victory conditions, spell schools) live in `knownValues.ts` / `heroCatalog.ts` with `// TODO: verify wording against in-game Russian localization` — verify against the game's RU localization before removing the marker.
+- Hero/unit/spell names come from the datamine (English) by design.
 
-Releases are produced by `.github/workflows/release.yml` and are triggered by pushing a `v*` tag. The workflow runs on `windows-latest`, publishes the WPF editor as a self-contained single-file `win-x64` exe named `OldenEraTemplates-<tag>.exe`, and creates a GitHub Release with auto-generated notes.
+## Community data
 
-To cut a release:
+`src/data/community/*.json` mirrors alcaras/homm-olden. Refresh: `python3 scripts/fetch-from-alcaras.py` (paths of the JSON sink are inside the script). A weekly workflow opens a PR; `npm test` gates it (catalog invariants: 108 heroes, 6 factions, SID regex).
 
-1. Bump `<Version>`, `<AssemblyVersion>`, and `<FileVersion>` in `src/OldenEra.TemplateEditor/OldenEra.TemplateEditor.csproj` to the new `X.Y.Z`. Keep all three in sync. `AssemblyVersion`/`FileVersion` use the four-part `X.Y.Z.0` form.
-2. Commit on `main`: `chore: bump version to vX.Y.Z`.
-3. Tag the commit and push:
-   ```bash
-   git tag vX.Y.Z
-   git push origin main vX.Y.Z
-   ```
-4. Watch the workflow: `gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')`.
-5. Verify the release: `gh release view vX.Y.Z`.
+## Release process
 
-Rules:
+1. Sync versions in `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` (and `Cargo.lock` will follow).
+2. Commit on `main`, tag `vX.Y.Z`, push.
+3. `release.yml` (tauri-action) builds all four targets and publishes the release. Updater signing needs repo secrets `TAURI_SIGNING_PRIVATE_KEY` (+`_PASSWORD`); the public key is embedded in `tauri.conf.json`. Local keypair lives in `~/.tauri/olden-era-templates.key` — never commit it.
+4. Never re-tag an existing version; bump the patch instead.
 
-- The tag MUST start with `v` and match the csproj version. `v0.6.0` ↔ `<Version>0.6.0</Version>`.
-- Never re-tag an existing version. If a release is broken, bump the patch (`v0.6.1`) instead of force-pushing the tag.
-- Do not edit `release.yml` as part of a version bump unless the workflow itself needs a fix; keep release-mechanism changes in their own PR.
-- The `workflow_dispatch` trigger exists for re-runs and accepts a `tag` input — use it only when re-publishing an already-pushed tag, not as a substitute for tagging.
+## Gotchas
 
-## UI text sourcing
-
-When writing or renaming UI labels and hints across the Web (`OldenEra.Web/Components/*.razor`) and WPF (`OldenEra.TemplateEditor/Views/*.xaml`) panels, follow these rules:
-
-- **Player-facing terms** (heroes, factions, skills, win conditions, faction laws, astrology, gladiator arena, tournament): match the in-game label or the Olden Era wiki. Do not invent synonyms. When in doubt, copy the game's tooltip wording verbatim.
-- **Template-author terms** (guard randomization, content pools, tiers, building presets, neutral zone counts, weekly guard increment, etc.): no canonical source exists. Write plain-English hints that describe what the slider/toggle does. Do not invent new names for the underlying concept; only explain it.
-- **Reviewer flag:** any new player-facing string added without verifying the in-game wording must be marked with `<!-- TODO: verify wording against in-game tooltip -->` (Razor) or an equivalent XAML comment. Do not merge with TODOs unresolved when shipping a release.
-
-The Web and WPF labels must stay in sync. After renaming a label in one host, re-grep the other host for the old text and update it (e.g. `grep -RIn "old label" src/`).
-
-## Community datamine (`CommunityData/`)
-
-The reference catalog at `src/OldenEra.Generator/CommunityData/*.json` is sourced from [alcaras/homm-olden](https://github.com/alcaras/homm-olden). Files are embedded resources read by `CommunityCatalog`.
-
-**Re-pull / refresh:**
-
-```bash
-python3 src/OldenEra.Generator/CommunityData/scripts/fetch-from-alcaras.py
-```
-
-The script fetches `docs/data.js`, `docs/skills-data.js`, and `docs/spells-data.js` from upstream, parses the JS const arrays / `window.OE_*` objects, and overwrites the seven JSON files in place. No external dependencies — pure stdlib.
-
-**When to refresh:**
-- Game patch likely changed hero/unit/spell stats. Re-pull, run tests, diff what changed.
-- Adding a new feature that needs fields not currently exposed in `CommunityCatalog` records (the records expose a subset of upstream fields; extend the record types in `CommunityCatalog.cs`, then re-pull).
-
-**Verify after refresh:**
-- `dotnet test tests/OldenEra.Generator.Tests/OldenEra.Generator.Tests.csproj --filter CommunityCatalog` should still pass. The tests assert structural invariants (108 heroes, 6 factions, every hero belongs to a known faction, etc.); a failure usually means upstream renamed a field or changed schema.
-- `git diff src/OldenEra.Generator/CommunityData/*.json` to eyeball what changed before committing.
-
-If upstream becomes unavailable, the embedded JSON keeps working — only re-fetching needs network access. A scheduled workflow (`refresh-community-data.yml`) re-runs the script weekly and opens a PR when files changed.
-
-## Debugging Blazor errors
-
-The web app's "An unhandled error has occurred. Reload" banner is a generic placeholder. The actual exception is logged to the **browser DevTools console**, not the `dotnet run` terminal. When users report errors:
-
-1. Have them open DevTools (Cmd/Ctrl + Shift + I) → Console tab.
-2. Reproduce the error.
-3. Copy the red `crit:` line and the inner exception(s) underneath.
-
-Server-side `dotnet run` logs only show server-side errors. WASM exceptions never appear there.
+- macOS/Linux cannot run Windows-only code paths; `steam_detect.rs` registry branch is `#[cfg(windows)]` — the `libraryfolders.vdf` parser is the tested path.
+- e2e tests target the **vite preview** (production bundle), not `tauri dev`; browser build degrades gracefully without Tauri (`src/platform.ts`).
+- First `cargo build` downloads ~500 crates; use `cargo check` for quick validation.
+- The repo previously contained a C# solution (deleted in the TS rewrite); do not resurrect `.csproj`/`.slnx` references in docs or CI.

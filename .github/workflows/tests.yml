@@ -1,32 +1,28 @@
-name: Olden Era Tests
+name: Tests
 
 on:
-  push:          # run on every push
-    branches: [ "**" ]
-  pull_request:  # also run on PRs
-    branches: [ "**" ]
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
 
-    - name: Install wasm-tools workload
-      run: dotnet workload install wasm-tools
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Restore dependencies
-      run: dotnet restore OldenEra.slnx
+      - name: Typecheck + build
+        run: npm run build
 
-    - name: Build
-      run: dotnet build OldenEra.slnx --configuration Release --no-restore
-
-    - name: Run tests
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      - name: Unit tests (vitest)
+        run: npm test

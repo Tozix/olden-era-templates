@@ -1,221 +1,82 @@
-# Olden Era — Simple Template Generator
+# Olden Era — Генератор шаблонов карт
 
-> **⚠️ Disclaimer**  
-> This project was mostly built with GitHub Copilot. The goal was to quickly create a tool for generating random map templates with custom settings to play with friends — not to produce a polished, production-ready application. As a result, some edge cases may not be handled perfectly and bugs are to be expected. Features marked as **[EXPERIMENTAL]** in the UI have not been thoroughly tested and may produce broken or unplayable maps.
+Десктопный генератор случайных карт (`.rmg.json`) для **Heroes of Might and Magic: Olden Era**. Кроссплатформенный: **Windows, macOS, Linux** (Tauri 2 + TypeScript).
 
----
+> Это переписанная с нуля версия бывшего C#-приложения (WPF + Blazor WASM). Форматы файлов полностью совместимы: `.oetgs`-настройки и сгенерированные `.rmg.json`-шаблоны открываются как старыми, так и новыми версиями.
 
-## What is this?
+## Возможности
 
-A small Windows desktop tool that generates `.rmg.json` random map templates for **Heroes of Might and Magic: Olden Era**. Instead of editing JSON by hand, you configure your map settings through a simple UI and click **Generate Template**.
+- 6 топологий карты: Кольцо, Хаб, Цепочка, Случайная, Сбалансированная + турнирные сетки
+- 2–8 игроков, настройки нейтральных зон, замков, плотности ресурсов и стражи
+- Баны героев и заклинаний (по встроенному каталогу игры: 108 героев, 6 фракций)
+- Условия победы: стандарт, потеря города, гладиаторская арена, удержание города, турнир
+- Экспериментальные функции: стартовые бонусы, контроль контента зон, переопределения зон, ямы сражений и др.
+- PNG-превью карты (Canvas2D, порт SkiaSharp-рендера)
+- Встроенные и пользовательские пресеты, undo/redo, автосохранение
+- Автодетект папки `map_templates` установленной игры через Steam
+- Автообновления (GitHub Releases + подписанный updater)
 
----
+## Установка
 
-## Features
+Скачайте сборку со страницы [Releases](https://github.com/rannes/olden-era-templates/releases):
 
-### General
+| ОС | Файл |
+|---|---|
+| Windows | `.msi` / `.exe` (NSIS) |
+| macOS (Apple Silicon) | `.dmg` (aarch64) |
+| macOS (Intel) | `.dmg` (x64) |
+| Linux | `.AppImage` / `.deb` |
 
-- Configure **template name**, **player count** (2–8), and **map size**
-- **Built-in preset library** — start from hand-tuned templates (Jebus-like, Arcade 2v2, Big Map FFA) via the **Load preset…** button
-- Experimental map sizes available via an opt-in checkbox
-- **Reproducible generation** — set an optional integer **seed** to make output deterministic; the same settings + seed always produce the same `.rmg.json`. Click 🎲 to roll a fresh seed, leave blank for non-deterministic output. The seed used is shown after generation so you can copy and share it.
-- **Auto update check** — notifies you on startup if a newer version is available on GitHub
-- Automatically detects your **Olden Era install path** via Steam registry and opens the Save dialog in the correct `map_templates` folder
-- **Preview image** — generate a visual overview of the zone layout before saving; optionally save it in the template directory for in-game display
-
-### Hero Settings
-
-- Configure **minimum hero count**, **maximum hero count**, and the **per-castle increment**  
-  *(defaults: 4 min / 8 max / 1 increment)*
-
-### Map Layout (Topology)
-
-- **Random** — zones placed at random and connected to all neighbouring zones (Delaunay-based)
-- **Ring** — zones arranged in a circle, each connected to its two neighbours
-- **Chain** — zones connected in a straight line
-- **Hub** *(Experimental)* — all zones connect to a shared central hub
-  - Configurable **hub zone size** (0.25× – 3×)
-
-### Zone Configuration
-
-- Set **castles per player zone** and **castles per neutral zone**
-- Configure **resource spawn rate**, **structure density**, **neutral stack strength**, and **border guard strength**
-- **Match player castle factions** — player zones receive a faction-locked castle to match their chosen faction
-
-#### Advanced Settings
-
-Unlock additional controls via the **Advanced settings** checkbox:
-
-- **Player zone size** and **neutral zone size** multipliers (0.5× – 2×)
-- **Guard strength randomization** percentage
-- **Advanced neutral zone breakdown** — independently configure counts of low/medium/high quality neutral zones, with and without castles (up to 32 total zones in advanced mode)
-
-### Portal & Connectivity Options
-
-- **Always spawn portals** — adds portal connections between non-adjacent zones, with a configurable **max portal connections** limit
-- **Generate roads** — adds road objects between connected zones
-- **Spawn remote footholds** — places remote footholds in each castle zone
-- **Isolate player zones** *(Random layout only)* — players can only reach each other through neutral zones
-- **Balanced zone placement** — attempts to distribute zones more evenly across the map
-
-### Game Rules
-
-- **Victory condition** — choose between standard and alternative win conditions
-- **Faction Laws experience** and **Astrology experience** multipliers
-
-### Win Conditions
-
-#### Lose when starting city is lost
-#### Lose when starting hero is lost
-
-#### City Hold
-Players must capture and hold a designated city for a set number of days to win.
-
-- The city location is chosen automatically based on topology:
-  - **Hub** — the hub zone becomes the hold city
-  - **Other layouts** — the highest-quality neutral zone that is maximally equidistant from all players is attempted to be selected
-- The hold city is highlighted with a **golden house icon** in the preview image
-- Generation is blocked if no valid city zone can be determined
-
-#### Tournament Mode
-A special competitive mode designed for 1v1 play with an isolated preparation phase.
-
-- **Only available with exactly 2 players** — generation is blocked otherwise
-- Each player starts in a **completely isolated cluster** of zones; it is impossible to reach the opponent until the tournament begins
-- Neutral zones are **balanced by quality tier** across both players (each side gets the same mix of low/medium/high zones)
-- Zone order within each cluster is **randomised** but **mirrored** — both players experience the same layout
-- Supports multiple topologies:
-  - **Chain / Ring** — two mirrored isolated chains
-  - **Random** — two mirrored isolated Delaunay-like clusters
-  - **Hub** — each player gets their own private hub cluster (respects hub zone size setting)
-- Configure: **first tournament day**, **announcement lead time**, **tournament interval**, and **points needed to win**
-
----
-
-## Installation
-
-Two ways to use the generator:
-
-### Web version (any OS, no install)
-
-Open [the web version](https://rannes.github.io/olden-era-templates/) in any modern browser. Generation runs entirely on your device — nothing is uploaded. Works on Windows, macOS, Linux, and mobile. After generating, the `.rmg.json` downloads to your usual downloads folder; drop it into the game's `map_templates` folder by hand.
-
-### Windows desktop app (Steam auto-detect, save direct to `map_templates`)
-
-1. Download the latest release from the [Releases page](https://github.com/rannes/olden-era-templates/releases)
-2. Run `OldenEraTemplates.exe`
-3. No installation required — it's a single self-contained executable
-
-> **Requirements:** Windows 10/11 with [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) installed
-
----
-
-## How to use
-
-1. Fill in the settings you want
-2. Click **Preview** to see a visual overview of the generated zone layout (optional)
-3. Click **Generate & Save…**
-4. Save the `.rmg.json` file to your Olden Era templates folder:  
-   `<Olden Era install folder>\HeroesOldenEra_Data\StreamingAssets\map_templates`  
-   *(The tool tries to open this folder automatically if it can find your Steam installation)*
-5. Launch Olden Era and select your template when creating a game
-
----
-
-## Where are templates stored?
+### Где игра ищет шаблоны
 
 ```
-<Olden Era install folder>\HeroesOldenEra_Data\StreamingAssets\map_templates
+<папка игры Steam>\HeroesOldenEra_Data\StreamingAssets\map_templates
 ```
 
----
+Приложение находит эту папку автоматически (реестр Windows / `libraryfolders.vdf`) и предлагает её при сохранении.
 
-## Building from source
+## Детерминизм seed
 
-Requirements: the .NET 10 SDK. Visual Studio 2022+ or any editor with C# tooling works.
+Одинаковый seed всегда даёт одинаковый шаблон **внутри TS-версии**. Портированный PRNG (xoshiro256\*\*) не побитово совместим с .NET `Random`: шаблон с тем же seed будет отличаться от C#-версии приложения (но останется валидным).
+
+## Сборка из исходников
+
+Требования: **Node.js ≥ 20**, **Rust** (rustup), системные вебкит-зависимости на Linux (`libwebkit2gtk-4.1-dev` и др.).
 
 ```bash
-git clone https://github.com/KhanDevelopsGames/Olden-Era---Template-Generator.git
-cd "Olden-Era---Template-Generator"
-dotnet workload install wasm-tools   # one-time, needed for the web project
-dotnet build OldenEra.slnx
+npm ci
+npm run tauri dev      # запустить приложение в dev-режиме
+npm run tauri build    # собрать релизные бандлы
 ```
 
-The `wasm-tools` workload provides the Emscripten toolchain that statically links SkiaSharp's native binary into the WebAssembly bundle. Without it, the web project builds but Generate fails at runtime with `DllNotFoundException: libSkiaSharp`.
-
-The solution contains four projects:
-
-- `src/OldenEra.Generator/` — `net10.0` class library with the generator and SkiaSharp PNG renderer. Builds on any OS.
-- `src/OldenEra.Web/` — Blazor WebAssembly frontend. Run with `dotnet run --project src/OldenEra.Web`. Builds on any OS but requires the `wasm-tools` workload (see above).
-- `src/OldenEra.TemplateEditor/` — WPF desktop app. Builds and runs on Windows. (`Directory.Build.props` enables `EnableWindowsTargeting=true` so the project compiles on macOS/Linux for cross-checking; tests still need Windows to execute.)
-- `tests/OldenEra.TemplateEditor.Tests/` — xUnit tests. Currently `net10.0-windows`; runs on Windows only.
-
-### End-to-end (web) tests
-
-Playwright smoke tests live in `tests/e2e/`. They boot `OldenEra.Web` and exercise Generate plus the download buttons. Run locally:
+### Тесты
 
 ```bash
-cd tests/e2e
-npm install
-npx playwright install --with-deps chromium
-npm test
+npm test          # vitest: детерминизм, round-trip'ы, валидатор, каталоги
+npm run build     # typecheck + production-сборка
+npm run e2e       # Playwright против vite preview (сначала npm run build)
 ```
 
-CI runs them on Ubuntu via `.github/workflows/e2e.yml`.
+## Обновление каталога community-данных
 
----
+Каталог героев/заклинаний/юнитов зеркалируется из датамайна [alcaras/homm-olden](https://github.com/alcaras/homm-olden) в `src/data/community/*.json`:
 
-## Deployment
+```bash
+python3 scripts/fetch-from-alcaras.py
+```
 
-The web version auto-deploys to GitHub Pages on every push to `main` via `.github/workflows/deploy-web.yml`. To enable Pages on a fresh fork:
+Запускается автоматически по понедельникам (workflow `refresh-community-data.yml`) — при изменениях открывается PR.
 
-1. Push a commit to `main`. The Actions workflow runs `dotnet publish` and pushes the build to a `gh-pages` branch.
-2. **One-time:** in the repo's GitHub UI, go to **Settings → Pages**. Under "Build and deployment", set **Source** to *Deploy from a branch* and pick the `gh-pages` branch (root). Save.
-3. Subsequent pushes to `main` redeploy automatically.
+## Настройка автообновлений (для мейнтейнеров)
 
-The deployed URL is `https://<owner>.github.io/olden-era-templates/`.
+Подпись updater-артефактов требует секрета в настройках репозитория:
 
----
+- `TAURI_SIGNING_PRIVATE_KEY` — содержимое приватного minisign-ключа
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — пароль ключа (можно пустой)
 
-## Contributing
+Публичный ключ уже вшит в `src-tauri/tauri.conf.json`. Локальная пара ключей лежит в `~/.tauri/olden-era-templates.key(.pub)` — не коммитьте приватный ключ.
 
-Issues and pull requests are welcome. Keep in mind this is a hobby project — response times may vary.
+## Благодарности
 
----
-
-## Credits
-
-The bundled hero, unit, spell, skill, subclass, and faction reference data
-in `src/OldenEra.Generator/CommunityData/` is sourced from
-[**alcaras/homm-olden**](https://github.com/alcaras/homm-olden), a community
-datamine of the game's `Core.zip`.
-
-### Refreshing community data
-
-The bundled snapshot can drift as the game patches and the upstream datamine
-updates. The repo handles this two ways:
-
-- **Manual refresh.** From the repo root:
-
-  ```bash
-  python3 src/OldenEra.Generator/CommunityData/scripts/fetch-from-alcaras.py
-  ```
-
-  This rewrites `factions.json`, `heroes.json`, `units.json`, `subclasses.json`,
-  `skills.json`, `skill-columns.json`, and `spells.json` in place. Review the
-  diff, run the tests, and commit if it looks clean.
-
-- **Automated weekly refresh.** `.github/workflows/refresh-community-data.yml`
-  runs the fetch script every Monday at 08:00 UTC (and on-demand via
-  `workflow_dispatch`). If catalog files change, it opens a PR against `main`
-  with the diff summary and a link to the upstream commit being mirrored. The
-  repo's `tests` workflow runs against the PR — if tests pass, the PR is
-  reviewable; if they fail, the data shape likely shifted upstream and the C#
-  loaders need a follow-up before the refresh can merge.
-
----
-
-## License
-
-This project is not affiliated with or endorsed by the developers of Heroes of Might and Magic: Olden Era.  
-Use generated templates at your own risk.
+- [alcaras/homm-olden](https://github.com/alcaras/homm-olden) — датамайн каталога игры
+- [KhanDevelopsGames/Olden-Era---Template-Generator](https://github.com/KhanDevelopsGames/Olden-Era---Template-Generator) — оригинальный C#-проект, с которого начался этот форк
