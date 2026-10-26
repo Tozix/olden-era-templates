@@ -194,7 +194,7 @@ export async function installUpdate(): Promise<boolean> {
 /** Открыть страницу релизов в браузере. */
 export async function openReleasesPage(): Promise<void> {
   const opener = await import("@tauri-apps/plugin-opener");
-  await opener.openUrl("https://github.com/rannes/olden-era-templates/releases/latest");
+  await opener.openUrl("https://github.com/Tozix/olden-era-templates/releases/latest");
 }
 
 // ── Пакетная генерация ───────────────────────────────────────────────────────

@@ -19,7 +19,7 @@
 
 ## Установка
 
-Скачайте сборку со страницы [Releases](https://github.com/rannes/olden-era-templates/releases):
+Скачайте сборку со страницы [Releases](https://github.com/Tozix/olden-era-templates/releases):
 
 | ОС | Файл |
 |---|---|
