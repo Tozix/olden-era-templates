@@ -30,7 +30,21 @@ import { TopologyPanel } from "./components/panels/TopologyPanel";
 import { ZonesPanel } from "./components/panels/ZonesPanel";
 import { HeroesPanel } from "./components/panels/HeroesPanel";
 import { WinConditionsPanel } from "./components/panels/WinConditionsPanel";
-import { ExperimentalPanel } from "./components/panels/ExperimentalPanel";
+import { GameModeCard } from "./components/panels/GameModeCard";
+import { StartingBonusesCard } from "./components/panels/StartingBonusesCard";
+import { ConnectionDefaultsCard } from "./components/panels/ConnectionDefaultsCard";
+import { TerrainCard } from "./components/panels/TerrainCard";
+import { BuildingPresetsCard } from "./components/panels/BuildingPresetsCard";
+import { GuardProgressionCard } from "./components/panels/GuardProgressionCard";
+import { GuardReactionCard } from "./components/panels/GuardReactionCard";
+import { NeutralCitiesCard } from "./components/panels/NeutralCitiesCard";
+import { EncounterHolesCard } from "./components/panels/EncounterHolesCard";
+import { ForcedObjectsCard } from "./components/panels/ForcedObjectsCard";
+import { PerTierOverridesCard } from "./components/panels/PerTierOverridesCard";
+import { BordersRoadsCard } from "./components/panels/BordersRoadsCard";
+import { ContentControlCard } from "./components/panels/ContentControlCard";
+import { ZoneOverridesCard } from "./components/panels/ZoneOverridesCard";
+import { ZoneContentEditor } from "./components/panels/ZoneContentEditor";
 
 export default function App() {
   const file = useApp((s) => s.file);
@@ -56,7 +70,27 @@ export default function App() {
 
   useEffect(() => {
     void assistantInit();
-  }, [assistantInit]);
+    // Флаги экспериментальных секций в .oetgs держим включёнными —
+    // они нужны только старым читателям файла; новый UI их не гейтит.
+    const f = useApp.getState().file;
+    const allOn =
+      f.experimentalEnabled &&
+      f.expFeatureGameMode &&
+      f.expFeatureStartingBonuses &&
+      f.expFeatureZoneContent &&
+      f.expFeatureBordersRoads &&
+      f.expFeaturePerTierOverrides;
+    if (!allOn) {
+      useApp.getState().patch((f2) => {
+        f2.experimentalEnabled = true;
+        f2.expFeatureGameMode = true;
+        f2.expFeatureStartingBonuses = true;
+        f2.expFeatureZoneContent = true;
+        f2.expFeatureBordersRoads = true;
+        f2.expFeaturePerTierOverrides = true;
+      });
+    }
+  }, []);
 
   // Автосохранение (debounce 500 мс) — как в веб-версии.
   const saveTimer = useRef<number | null>(null);
@@ -194,17 +228,55 @@ export default function App() {
   const panel = (() => {
     switch (section) {
       case "map":
-        return <MapSettingsPanel />;
+        return (
+          <>
+            <MapSettingsPanel />
+            <BordersRoadsCard />
+          </>
+        );
       case "heroes":
-        return <HeroesPanel />;
+        return (
+          <>
+            <HeroesPanel />
+            <StartingBonusesCard />
+          </>
+        );
       case "topology":
-        return <TopologyPanel />;
+        return (
+          <>
+            <TopologyPanel />
+            <ConnectionDefaultsCard />
+          </>
+        );
       case "zones":
-        return <ZonesPanel />;
-      case "winConditions":
-        return <WinConditionsPanel />;
-      case "experimental":
-        return <ExperimentalPanel />;
+        return (
+          <>
+            <ZonesPanel />
+            <ForcedObjectsCard />
+            <TerrainCard />
+            <BuildingPresetsCard />
+            <GuardProgressionCard />
+            <GuardReactionCard />
+            <NeutralCitiesCard />
+            <EncounterHolesCard />
+            <PerTierOverridesCard />
+          </>
+        );
+      case "content":
+        return (
+          <>
+            <ContentControlCard />
+            <ZoneOverridesCard />
+            <ZoneContentEditor />
+          </>
+        );
+      case "rules":
+        return (
+          <>
+            <WinConditionsPanel />
+            <GameModeCard />
+          </>
+        );
     }
   })();
 

@@ -175,7 +175,7 @@ export function ContentControlCard() {
   let anyUnitMatch = false;
 
   return (
-    <Card title={T.title}>
+    <Card title={T.title} badge="Экспериментально">
       <FieldError fieldKey={ValidationFieldKeys.ZoneContentPool} />
       <div className="hint">{T.hint}</div>
 

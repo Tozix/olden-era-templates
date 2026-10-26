@@ -31,7 +31,7 @@ export function ConnectionDefaultsCard() {
   const guardRandomization = file.connectionGuardRandomization ?? null;
 
   return (
-    <Card title={T.cardTitle}>
+    <Card title={T.cardTitle} badge="Экспериментально">
       <SliderRow
         label={T.length}
         min={0}

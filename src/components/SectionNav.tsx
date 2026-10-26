@@ -7,8 +7,8 @@ export const SECTION_KEYS: SectionKey[] = [
   "heroes",
   "topology",
   "zones",
-  "winConditions",
-  "experimental",
+  "content",
+  "rules",
 ];
 
 export function SectionNav(props: {

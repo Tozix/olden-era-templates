@@ -69,12 +69,22 @@ test("AI-ассистент: панель открывается, модалка
   await expect(page.locator(".modal")).toHaveCount(0);
 });
 
-test("экспериментальная секция доступна сразу, карточки на месте", async ({ page }) => {
+test("экспериментальные карточки разложены по своим секциям", async ({ page }) => {
   await page.goto("/");
-  await page.locator(".section-nav button", { hasText: "Экспериментальные" }).click();
-  await expect(page.locator(".card", { hasText: "Гарантированный контент" })).toBeVisible();
+  // Контент зон: контроль контента + гарантированный контент + редактор
+  await page.locator(".section-nav button", { hasText: "Контент зон" }).click();
   await expect(page.locator(".card", { hasText: "Контроль контента" })).toBeVisible();
+  await expect(page.locator(".card", { hasText: "Переопределения зон" })).toBeVisible();
+  // Герои: стартовые бонусы
+  await page.locator(".section-nav button", { hasText: "Герои" }).click();
   await expect(page.locator(".card", { hasText: "Стартовые бонусы" })).toBeVisible();
+  // Правила игры: режим игры
+  await page.locator(".section-nav button", { hasText: "Правила игры" }).click();
+  await expect(page.locator(".card", { hasText: "Режим игры" })).toBeVisible();
+  // Зоны: гарантированный контент + стража
+  await page.locator(".section-nav button", { hasText: "Зоны" }).first().click();
+  await expect(page.locator(".card", { hasText: "Гарантированный контент" })).toBeVisible();
+  await expect(page.locator(".card", { hasText: "Рост стражи" }).first()).toBeVisible();
 });
 
 test("модалка массовой генерации открывается и закрывается", async ({ page }) => {

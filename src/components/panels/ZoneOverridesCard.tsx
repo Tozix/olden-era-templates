@@ -131,7 +131,7 @@ export function ZoneOverridesCard() {
       : String(file.zoneCrossroadsPosition);
 
   return (
-    <Card title={T.title}>
+    <Card title={T.title} badge="Экспериментально">
       <div className="hint">{T.hint}</div>
 
       <NullableNumberRow

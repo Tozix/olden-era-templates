@@ -27,7 +27,7 @@ export function BordersRoadsCard() {
   const patch = useApp((s) => s.patch);
 
   return (
-    <Card title={T.cardTitle}>
+    <Card title={T.cardTitle} badge="Экспериментально">
       <div className="hint">{T.hint}</div>
       {/* null = авто; слайдер 0 пишет null (см. подсказку «0 — авто»). */}
       <SliderRow

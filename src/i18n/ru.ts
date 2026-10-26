@@ -9,8 +9,8 @@ export const T = {
     heroes: "Герои",
     topology: "Топология",
     zones: "Зоны",
-    winConditions: "Условия победы",
-    experimental: "Экспериментальные",
+    content: "Контент зон",
+    rules: "Правила игры",
   } as const,
 
   toolbar: {

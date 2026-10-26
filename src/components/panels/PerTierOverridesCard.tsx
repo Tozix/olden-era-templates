@@ -39,7 +39,7 @@ export function PerTierOverridesCard() {
   const tier = file[active];
 
   return (
-    <Card title={T.cardTitle}>
+    <Card title={T.cardTitle} badge="Экспериментально">
       <div className="hint">{T.hint}</div>
       <div className="chip-tabs">
         {TIERS.map((t) => (

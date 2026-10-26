@@ -30,7 +30,7 @@ export function GuardReactionCard() {
   const patch = useApp((s) => s.patch);
 
   return (
-    <Card title={T.cardTitle}>
+    <Card title={T.cardTitle} badge="Экспериментально">
       <SelectField
         label={T.preset}
         value={file.guardReactionPreset}

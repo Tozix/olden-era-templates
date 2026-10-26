@@ -15,7 +15,7 @@ export function NeutralCitiesCard() {
   const patch = useApp((s) => s.patch);
 
   return (
-    <Card title={T.cardTitle}>
+    <Card title={T.cardTitle} badge="Экспериментально">
       <SliderRow
         label={T.guardChance}
         min={0}

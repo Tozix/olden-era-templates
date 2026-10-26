@@ -6,8 +6,6 @@ import { toJsonCompact, parseSettingsFile } from "../generator/json";
 import { EditHistory } from "../generator/editHistory";
 import type { GeneratorSettings } from "../generator/settings";
 import type { RmgTemplate } from "../generator/template";
-import type { ExperimentalFeature } from "../generator/experimentalFeatures";
-import { EXPERIMENTAL_FEATURES } from "../generator/experimentalFeatures";
 
 /**
  * Каноническое состояние UI — SettingsFile (формат .oetgs 1:1):
@@ -27,7 +25,6 @@ export interface AppStore {
   generating: boolean;
 
   settings: () => GeneratorSettings;
-  experimentalVisible: () => boolean;
   issuesForField: (fieldKey: string) => ValidationIssue[];
   hasBlocker: (fieldKey: string) => boolean;
 
@@ -40,7 +37,6 @@ export interface AppStore {
   undo: () => void;
   redo: () => void;
   applyFix: (fix: ValidationFix) => void;
-  setExpFeature: (key: string, on: boolean) => void;
   setGenerating: (on: boolean) => void;
   setGenerationResult: (template: RmgTemplate, dataUrl: string, bytes: Uint8Array) => void;
 }
@@ -49,16 +45,6 @@ function computeIssues(file: SettingsFile): ValidationIssue[] {
   return validate(fromFile(file));
 }
 
-function experimentalVisibleOf(file: SettingsFile): boolean {
-  return (
-    file.experimentalEnabled ||
-    file.expFeatureGameMode ||
-    file.expFeatureStartingBonuses ||
-    file.expFeatureZoneContent ||
-    file.expFeatureBordersRoads ||
-    file.expFeaturePerTierOverrides
-  );
-}
 
 export const useApp = create<AppStore>((set, get) => ({
   file: defaultSettingsFile(),
@@ -71,7 +57,6 @@ export const useApp = create<AppStore>((set, get) => ({
   generating: false,
 
   settings: () => fromFile(get().file),
-  experimentalVisible: () => experimentalVisibleOf(get().file),
   issuesForField: (fieldKey) => get().issues.filter((i) => i.fieldKey === fieldKey),
   hasBlocker: (fieldKey) => get().issues.some((i) => i.fieldKey === fieldKey && i.severity === "error"),
 
@@ -139,31 +124,6 @@ export const useApp = create<AppStore>((set, get) => ({
     } else if (fix.kind === "setDefaultTemplateName") next.templateName = "Custom Template";
     void fixed;
     set({ file: next, issues: computeIssues(next), dirty: true });
-  },
-
-  setExpFeature: (key, on) => {
-    get().patch((f) => {
-      // Мастер-флаг поднимается вместе с любой фичей — секция видна сразу.
-      if (on) f.experimentalEnabled = true;
-      const feature = EXPERIMENTAL_FEATURES.find((x: ExperimentalFeature) => x.key === key);
-      switch (feature?.key) {
-        case "game-mode":
-          f.expFeatureGameMode = on;
-          break;
-        case "starting-bonuses":
-          f.expFeatureStartingBonuses = on;
-          break;
-        case "zone-content":
-          f.expFeatureZoneContent = on;
-          break;
-        case "borders-roads":
-          f.expFeatureBordersRoads = on;
-          break;
-        case "per-tier-overrides":
-          f.expFeaturePerTierOverrides = on;
-          break;
-      }
-    });
   },
 
   setGenerating: (on) => set({ generating: on }),
