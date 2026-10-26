@@ -4,6 +4,7 @@ import { AiClientError, parseToolArguments, streamChat } from "../ai/openaiClien
 import { applySettingsPatch } from "../ai/patching";
 import type { AiMessageParam, AiToolCall, ChatUiMessage } from "../ai/types";
 import { defaultAiConfig, loadAiConfig, saveAiConfig, type AiConfig } from "../desktop/bridge";
+import { isTauri } from "../platform";
 import { useApp } from "./settingsStore";
 import { fromFile } from "../generator/settingsMapper";
 import { validate } from "../generator/settingsValidator";
@@ -202,6 +203,42 @@ async function executeToolCall(
       summary: outcome.summary,
       validationBlockers: outcome.blockers,
       error: outcome.error,
+    });
+    return { label, resultJson };
+  }
+
+  if (name === "generate_batch") {
+    const args = parseToolArguments({ id: "x", name, arguments: rawArguments });
+    const a = args as {
+      count?: number;
+      sizeMin?: number;
+      sizeMax?: number;
+      topologies?: string[];
+      playersMin?: number;
+      playersMax?: number;
+    };
+    const { runBatch } = await import("./batchActions");
+    const { batchZipPath } = await import("../desktop/bridge");
+    const count = Math.max(1, Math.min(20, Math.round(a.count ?? 1)));
+    const base = useApp.getState().file;
+    const res = await runBatch(
+      {
+        count,
+        sizeMin: a.sizeMin ?? 96,
+        sizeMax: a.sizeMax ?? 240,
+        topologies: (a.topologies?.length ? a.topologies : [base.topology]) as never,
+        playersMin: a.playersMin ?? 2,
+        playersMax: a.playersMax ?? 8,
+      },
+      { includePng: true, silentPath: isTauri() ? await batchZipPath() : undefined },
+    );
+    const label = res.ok ? `📦 Пакет: ${count} карт(ы)` : res.blockers ? "📦 Пакет: есть блокеры" : "📦 Ошибка пакета";
+    const resultJson = JSON.stringify({
+      ok: res.ok,
+      error: res.error,
+      validationBlockers: res.blockers,
+      savedTo: res.savedPath,
+      maps: res.maps,
     });
     return { label, resultJson };
   }

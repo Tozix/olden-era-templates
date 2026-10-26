@@ -248,6 +248,19 @@ export interface EncounterHolesOptions {
   twoHoleEncounters: number;
 }
 
+// ── Гарантированный контент («тонкие настройки») ────────────────────────────
+
+export type ForcedContentTarget = "player" | "neutral";
+
+export interface ForcedObjectSetting {
+  /** SID объекта из каталога (например, dragon_utopia). */
+  sid: string;
+  /** Сколько копий разместить на всю карту. */
+  count: number;
+  /** Куда класть: в зоны игроков или нейтральные зоны (распределение по кругу). */
+  target: ForcedContentTarget;
+}
+
 export interface BordersRoadsSettings {
   cornerRadius?: number | null;
   obstaclesWidth?: number | null;
@@ -295,6 +308,7 @@ export interface GeneratorSettings {
   connectionDefaults: ConnectionDefaultsSettings;
   zoneOverrides: ZoneOverridesSettings;
   encounterHoles: EncounterHolesOptions;
+  forcedContent: ForcedObjectSetting[];
   playerZoneContent: ZoneContentList;
   neutralZoneContent: NeutralZoneContent;
   zoneRoadDecorations: ZoneRoadDecoration[];
@@ -446,6 +460,7 @@ export function defaultGeneratorSettings(): GeneratorSettings {
       randomHireInitialUnitIncrement: [],
     },
     encounterHoles: { enabled: false, affectedEncounters: 0.66, twoHoleEncounters: 0.66 },
+    forcedContent: [],
     playerZoneContent: emptyZoneContentList(),
     neutralZoneContent: emptyNeutralZoneContent(),
     zoneRoadDecorations: [],

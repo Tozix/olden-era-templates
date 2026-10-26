@@ -124,6 +124,8 @@ const RU: Record<string, string> = {
   playerZoneContent: "контент зон игроков (сложное дерево, не меняй без запроса)",
   neutralZoneContent: "контент нейтральных зон (сложное дерево)",
   zoneRoadDecorations: "дорожные декорации (сложный массив)",
+  forcedContent:
+    "гарантированный контент: [{sid, count, zoneTarget: \"player\"|\"neutral\"}] — count копий SID на карту, распределение по кругу (например, dragon_utopia ×3 в нейтральные зоны)",
 };
 
 const RANGES: Record<string, string> = {

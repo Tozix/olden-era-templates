@@ -68,3 +68,20 @@ test("AI-ассистент: панель открывается, модалка
   await page.getByRole("button", { name: /Отмена/ }).click();
   await expect(page.locator(".modal")).toHaveCount(0);
 });
+
+test("экспериментальная секция доступна сразу, карточки на месте", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".section-nav button", { hasText: "Экспериментальные" }).click();
+  await expect(page.locator(".card", { hasText: "Гарантированный контент" })).toBeVisible();
+  await expect(page.locator(".card", { hasText: "Контроль контента" })).toBeVisible();
+  await expect(page.locator(".card", { hasText: "Стартовые бонусы" })).toBeVisible();
+});
+
+test("модалка массовой генерации открывается и закрывается", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /Пакет/ }).click();
+  await expect(page.locator(".modal")).toBeVisible();
+  await expect(page.locator(".modal", { hasText: "Количество карт" })).toBeVisible();
+  await page.getByRole("button", { name: /Закрыть/ }).click();
+  await expect(page.locator(".modal")).toHaveCount(0);
+});

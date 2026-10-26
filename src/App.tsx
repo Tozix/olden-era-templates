@@ -13,10 +13,11 @@ import {
   saveTemplateFileDialog,
   writeTextFile,
 } from "./desktop/bridge";
-import { ToastArea, useToasts, useUndoRedoHotkeys, CheckboxRow } from "./components/ui";
+import { ToastArea, useToasts, useUndoRedoHotkeys } from "./components/ui";
 import { SectionNav, type SectionKey } from "./components/SectionNav";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { PresetPickerModal } from "./components/PresetPickerModal";
+import { BatchModal } from "./components/BatchModal";
 import { encodeSettings, MAX_ENCODED_LENGTH, tryDecodeSettings } from "./generator/settingsShareCodec";
 import { toJsonIndented, toJsonCompact } from "./generator/json";
 import { sanitizeTemplateName } from "./generator/previewSidecar";
@@ -38,7 +39,6 @@ export default function App() {
   const generating = useApp((s) => s.generating);
   const undo = useApp((s) => s.undo);
   const redo = useApp((s) => s.redo);
-  const patch = useApp((s) => s.patch);
   const resetToDefaults = useApp((s) => s.resetToDefaults);
   const loadFileJson = useApp((s) => s.loadFileJson);
   const markSaved = useApp((s) => s.markSaved);
@@ -47,6 +47,7 @@ export default function App() {
   const [section, setSection] = useState<SectionKey>("map");
   const [presetModalOpen, setPresetModalOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const steamDir = useRef<string | null>(null);
   const { toasts, push } = useToasts();
@@ -56,8 +57,6 @@ export default function App() {
   useEffect(() => {
     void assistantInit();
   }, [assistantInit]);
-
-  const experimentalVisible = useApp((s) => s.experimentalVisible());
 
   // Автосохранение (debounce 500 мс) — как в веб-версии.
   const saveTimer = useRef<number | null>(null);
@@ -232,11 +231,7 @@ export default function App() {
         <button onClick={() => void onShareCode()}>{T.toolbar.shareCode}</button>
         <button onClick={() => void onPasteCode()}>⤵</button>
         <span className="spacer" />
-        <CheckboxRow
-          label={T.experimentalMode}
-          checked={file.experimentalEnabled}
-          onChange={(v) => patch((f) => { f.experimentalEnabled = v; })}
-        />
+        <button onClick={() => setBatchOpen(true)} title="Массовая генерация карт">📦 Пакет</button>
         <button onClick={() => setAiOpen(!aiOpen)} title="Чат с ИИ-ассистентом">🤖 AI</button>
         <button onClick={undo} title="Ctrl/Cmd+Z">↩ {T.toolbar.undo}</button>
         <button onClick={redo} title="Ctrl+Shift+Z">↪ {T.toolbar.redo}</button>
@@ -244,12 +239,7 @@ export default function App() {
         <button onClick={() => void openReleasesPage()}>{T.toolbar.github}</button>
       </div>
       <div className="main">
-        <SectionNav
-          active={section}
-          onSelect={setSection}
-          experimentalVisible={experimentalVisible || section === "experimental"}
-          blockers={blockers.length}
-        />
+        <SectionNav active={section} onSelect={setSection} blockers={blockers.length} />
         <div className="panel-scroll">
           <h2>{T.sections[section]}</h2>
           {panel}
@@ -258,6 +248,7 @@ export default function App() {
         <PreviewPanel onGenerate={() => void onGenerate()} generating={generating} blockers={blockers.map((b) => b.message)} onSaveTemplate={() => void onSaveTemplate()} />
       </div>
       {presetModalOpen && <PresetPickerModal onClose={() => setPresetModalOpen(false)} push={push} />}
+      {batchOpen && <BatchModal onClose={() => setBatchOpen(false)} push={push} />}
       <ToastArea toasts={toasts} />
     </div>
   );

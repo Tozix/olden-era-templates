@@ -45,6 +45,12 @@ export interface PerPlayerBonusFile {
   unitMultiplierStartHeroOnly: boolean;
 }
 
+export interface ForcedObjectFile {
+  sid: string;
+  count: number;
+  zoneTarget: "player" | "neutral";
+}
+
 export interface SettingsFile {
   templateName: string;
   descriptionOverride: string;
@@ -149,6 +155,8 @@ export interface SettingsFile {
   encounterHolesEnabled: boolean;
   encounterHolesAffectedEncounters: number;
   encounterHolesTwoHoleEncounters: number;
+  /** Гарантированный контент: N копий SID по зонам-целям (additive поле; старые читатели игнорируют). */
+  forcedContent: ForcedObjectFile[];
   buildingPresetPlayer: string;
   buildingPresetNeutral: string;
   zoneGuardWeeklyIncrement: number;
@@ -290,6 +298,7 @@ export function defaultSettingsFile(): SettingsFile {
     encounterHolesEnabled: false,
     encounterHolesAffectedEncounters: 0.66,
     encounterHolesTwoHoleEncounters: 0.66,
+    forcedContent: [],
     buildingPresetPlayer: "",
     buildingPresetNeutral: "",
     zoneGuardWeeklyIncrement: 0,

@@ -78,6 +78,9 @@ export function buildAllMandatoryContent(
   const groups: MandatoryContentGroup[] = [];
   const referencedNames = referencedRoadDecorationItems(settings.zoneRoadDecorations);
 
+  const playerGroups: MandatoryContentGroup[] = [];
+  const neutralGroups: MandatoryContentGroup[] = [];
+
   for (const letter of playerLetters) {
     const group = buildSpawnMandatoryContent(letter, settings.zoneCfg.playerZoneCastles, settings.spawnRemoteFootholds);
     const userItems = settings.playerZoneContent.items;
@@ -85,6 +88,7 @@ export function buildAllMandatoryContent(
       // Предупреждения отбрасываются здесь — UI-сурфейсинг отдельно.
       applyToMandatoryGroup(group, userItems, `side_${letter}`, referencedNames);
     }
+    playerGroups.push(group);
     groups.push(group);
   }
 
@@ -99,7 +103,23 @@ export function buildAllMandatoryContent(
     if (resolved.length > 0) {
       applyToMandatoryGroup(group, resolved, `neutral_${neutralZone.letter}`, referencedNames);
     }
+    neutralGroups.push(group);
     groups.push(group);
+  }
+
+  // Гарантированный контент («тонкие настройки»): count копий SID
+  // распределяются по кругу между зонами выбранной цели. Ряды вида
+  // { sid } — та же форма, что у собственных строк генератора.
+  for (const forced of settings.forcedContent) {
+    const sid = forced.sid.trim();
+    if (sid.length === 0 || forced.count <= 0) continue;
+    const targets = forced.target === "player" ? playerGroups : neutralGroups;
+    if (targets.length === 0) continue;
+    for (let i = 0; i < forced.count; i++) {
+      const group = targets[i % targets.length];
+      group.content ??= [];
+      group.content.push({ sid });
+    }
   }
 
   return groups;

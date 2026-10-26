@@ -31,6 +31,30 @@ export const AI_TOOLS = [
       parameters: { type: "object", properties: {}, required: [] },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "generate_batch",
+      description:
+        "Массовая генерация нескольких РАЗНЫХ карт одним ZIP-архивом (разные размеры/топологии/число игроков, у каждой своё осмысленное имя и описание). Общие настройки наследуются от текущих.",
+      parameters: {
+        type: "object",
+        properties: {
+          count: { type: "integer", description: "сколько карт, 1..20" },
+          sizeMin: { type: "integer", description: "минимальный размер (64..512)" },
+          sizeMax: { type: "integer", description: "максимальный размер" },
+          topologies: {
+            type: "array",
+            items: { type: "string", enum: ["Default", "HubAndSpoke", "Chain", "SharedWeb", "Random", "Balanced"] },
+            description: "пул топологий для случайного выбора",
+          },
+          playersMin: { type: "integer", description: "2..8" },
+          playersMax: { type: "integer", description: "2..8" },
+        },
+        required: ["count"],
+      },
+    },
+  },
 ] as const;
 
 interface AccumulatedToolCall {

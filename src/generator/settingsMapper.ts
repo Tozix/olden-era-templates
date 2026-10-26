@@ -414,6 +414,11 @@ export function fromFileFull(file: SettingsFile): FromFileResult {
   // расхождение файл/память.
   settings.playerZoneContent = file.playerZoneContent ?? emptyZoneContentList();
   settings.neutralZoneContent = file.neutralZoneContent ?? emptyNeutralZoneContent();
+  settings.forcedContent = (file.forcedContent ?? []).map((f) => ({
+    sid: f.sid,
+    count: f.count,
+    target: f.zoneTarget,
+  }));
   settings.zoneRoadDecorations = file.zoneRoadDecorations ?? [];
 
   const flags: ExperimentalFlags = {
@@ -636,6 +641,11 @@ export function toFile(
   // владельцем внутренней модели. UI должен клонировать перед мутацией.
   file.playerZoneContent = settings.playerZoneContent;
   file.neutralZoneContent = settings.neutralZoneContent;
+  file.forcedContent = settings.forcedContent.map((f) => ({
+    sid: f.sid,
+    count: f.count,
+    zoneTarget: f.target,
+  }));
   file.zoneRoadDecorations = settings.zoneRoadDecorations;
   return file;
 }

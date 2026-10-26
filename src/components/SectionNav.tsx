@@ -14,10 +14,9 @@ export const SECTION_KEYS: SectionKey[] = [
 export function SectionNav(props: {
   active: SectionKey;
   onSelect: (key: SectionKey) => void;
-  experimentalVisible: boolean;
   blockers: number;
 }) {
-  const keys = SECTION_KEYS.filter((k) => k !== "experimental" || props.experimentalVisible);
+  const keys = SECTION_KEYS;
   return (
     <nav className="section-nav">
       {keys.map((key) => (

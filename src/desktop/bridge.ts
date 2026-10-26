@@ -197,6 +197,39 @@ export async function openReleasesPage(): Promise<void> {
   await opener.openUrl("https://github.com/rannes/olden-era-templates/releases/latest");
 }
 
+// ── Пакетная генерация ───────────────────────────────────────────────────────
+
+export async function saveZipFileDialog(defaultName: string): Promise<string | null> {
+  if (!isTauri()) return null;
+  const dialog = await import("@tauri-apps/plugin-dialog");
+  const picked = await dialog.save({
+    title: "Сохранить пакет карт",
+    defaultPath: `${defaultName}.zip`,
+    filters: [{ name: "Архив карт", extensions: ["zip"] }],
+  });
+  return picked ?? null;
+}
+
+export async function writeFileBytes(path: string, bytes: Uint8Array): Promise<void> {
+  if (!isTauri()) throw new Error("Запись доступна только в приложении");
+  const { invoke } = await import("@tauri-apps/api/core");
+  await invoke("write_file_bytes", { path, bytes: Array.from(bytes) });
+}
+
+export async function revealInFolder(path: string): Promise<void> {
+  if (!isTauri()) return;
+  const { invoke } = await import("@tauri-apps/api/core");
+  await invoke("reveal_in_folder", { path });
+}
+
+/** Путь ZIP для AI-пакетов: appData/OldenEraTemplates/Batch/maps-<timestamp>.zip */
+export async function batchZipPath(): Promise<string> {
+  const { appDataDir, join } = await import("@tauri-apps/api/path");
+  const dir = await join(await appDataDir(), "OldenEraTemplates", "Batch");
+  await ensureDirRecursive(dir);
+  return join(dir, `maps-${new Date().toISOString().replace(/[:.]/g, "-")}.zip`);
+}
+
 // ── Конфиг AI-ассистента (appData/ai-config.json; ключ не покидает машину) ──
 
 export interface AiConfig {
