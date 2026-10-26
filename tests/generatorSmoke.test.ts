@@ -128,8 +128,22 @@ describe("community catalog", () => {
   });
 });
 
-describe("edit history", () => {
-  it("push/undo/redo/dedupe (семантика C#-эталона)", () => {
+describe("пользовательские лимиты контента", () => {
+  it("эмитятся как user_limit_<sid> (утопии драконов и др.)", () => {
+    const s = defaultGeneratorSettings();
+    s.content.contentCountLimits = [
+      { sid: "dragon_utopia", maxPerPlayer: 2 },
+      { sid: "", maxPerPlayer: 5 }, // пустой SID пропускается
+    ];
+    const t = generate(s);
+    const utopia = t.contentCountLimits?.find((c) => c.name === "user_limit_dragon_utopia");
+    expect(utopia).toBeDefined();
+    expect(utopia!.limits).toEqual([{ sid: "dragon_utopia", maxCount: 2 }]);
+    expect(t.contentCountLimits?.some((c) => c.name === "user_limit_")).toBe(false);
+  });
+});
+
+describe("edit history", () => {  it("push/undo/redo/dedupe (семантика C#-эталона)", () => {
     const hist = new EditHistory();
     hist.push("a");
     expect(hist.canUndo).toBe(true);

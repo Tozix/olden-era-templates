@@ -51,6 +51,7 @@ function computeIssues(file: SettingsFile): ValidationIssue[] {
 
 function experimentalVisibleOf(file: SettingsFile): boolean {
   return (
+    file.experimentalEnabled ||
     file.expFeatureGameMode ||
     file.expFeatureStartingBonuses ||
     file.expFeatureZoneContent ||
@@ -142,6 +143,8 @@ export const useApp = create<AppStore>((set, get) => ({
 
   setExpFeature: (key, on) => {
     get().patch((f) => {
+      // Мастер-флаг поднимается вместе с любой фичей — секция видна сразу.
+      if (on) f.experimentalEnabled = true;
       const feature = EXPERIMENTAL_FEATURES.find((x: ExperimentalFeature) => x.key === key);
       switch (feature?.key) {
         case "game-mode":

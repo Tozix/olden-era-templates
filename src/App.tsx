@@ -13,7 +13,7 @@ import {
   saveTemplateFileDialog,
   writeTextFile,
 } from "./desktop/bridge";
-import { ToastArea, useToasts, useUndoRedoHotkeys } from "./components/ui";
+import { ToastArea, useToasts, useUndoRedoHotkeys, CheckboxRow } from "./components/ui";
 import { SectionNav, type SectionKey } from "./components/SectionNav";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { PresetPickerModal } from "./components/PresetPickerModal";
@@ -38,6 +38,7 @@ export default function App() {
   const generating = useApp((s) => s.generating);
   const undo = useApp((s) => s.undo);
   const redo = useApp((s) => s.redo);
+  const patch = useApp((s) => s.patch);
   const resetToDefaults = useApp((s) => s.resetToDefaults);
   const loadFileJson = useApp((s) => s.loadFileJson);
   const markSaved = useApp((s) => s.markSaved);
@@ -231,6 +232,11 @@ export default function App() {
         <button onClick={() => void onShareCode()}>{T.toolbar.shareCode}</button>
         <button onClick={() => void onPasteCode()}>⤵</button>
         <span className="spacer" />
+        <CheckboxRow
+          label={T.experimentalMode}
+          checked={file.experimentalEnabled}
+          onChange={(v) => patch((f) => { f.experimentalEnabled = v; })}
+        />
         <button onClick={() => setAiOpen(!aiOpen)} title="Чат с ИИ-ассистентом">🤖 AI</button>
         <button onClick={undo} title="Ctrl/Cmd+Z">↩ {T.toolbar.undo}</button>
         <button onClick={redo} title="Ctrl+Shift+Z">↪ {T.toolbar.redo}</button>
