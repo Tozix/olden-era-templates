@@ -1,0 +1,76 @@
+/** Русские строки оболочки приложения. Строки панелей лежат в самих панелях. */
+
+export const T = {
+  appTitle: "Olden Era — Генератор шаблонов",
+  versionLabel: "v0.8.0",
+
+  sections: {
+    map: "Карта",
+    heroes: "Герои",
+    topology: "Топология",
+    zones: "Зоны",
+    winConditions: "Условия победы",
+    experimental: "Экспериментальные",
+  } as const,
+
+  toolbar: {
+    new: "Создать",
+    open: "Открыть…",
+    save: "Сохранить",
+    saveAs: "Сохранить как…",
+    loadPreset: "Загрузить пресет…",
+    shareCode: "Код настроек",
+    undo: "Отменить",
+    redo: "Вернуть",
+    checkUpdates: "Проверить обновления",
+    github: "GitHub",
+  },
+
+  advancedMode: "Расширенный режим",
+  experimentalMode: "Экспериментальные функции",
+
+  generate: "Сгенерировать шаблон",
+  generating: "Генерация…",
+  saveTemplate: "Сохранить шаблон…",
+  reseed: "🎲 Новый seed",
+  seedUsed: "Использован seed",
+  seedAuto: "(случайный)",
+  noPreview: "Нажмите «Сгенерировать шаблон», чтобы увидеть карту.",
+  previewFailed: "Не удалось отрисовать превью",
+
+  saveTemplateConfirmWrongDir:
+    "Папка не похожа на каталог map_templates игры. Сохранить всё равно?",
+  templateSaved: "Шаблон сохранён",
+  templateSaveCancelled: "Сохранение отменено",
+  settingsSaved: "Настройки сохранены",
+  settingsOpened: "Настройки загружены",
+  settingsOpenFailed: "Не удалось разобрать файл настроек",
+  copied: "Скопировано в буфер обмена",
+  copyFailed: "Не удалось скопировать",
+  shareCodePrompt: "Вставьте код настроек:",
+  shareCodeApplied: "Код настроек применён",
+  shareCodeInvalid: "Некорректный код настроек",
+  updateAvailable: "Доступна новая версия",
+  updateInstall: "Скачать и установить",
+  updateNotAvailable: "Вы используете последнюю версию",
+  confirmReset: "Сбросить все настройки к значениям по умолчанию?",
+  validationBlockers: "Исправьте блокирующие ошибки перед генерацией",
+
+  presets: {
+    title: "Загрузить пресет",
+    builtin: "Встроенные пресеты",
+    mine: "Мои пресеты",
+    empty: "Пока нет сохранённых пресетов",
+    saveAs: "Сохранить текущие как пресет…",
+    namePlaceholder: "Название пресета",
+    save: "Сохранить",
+    delete: "Удалить",
+    load: "Загрузить",
+    cancel: "Отмена",
+    loaded: "Пресет загружен",
+    saved: "Пресет сохранён",
+    deleted: "Пресет удалён",
+    confirmOverwrite: "Пресет с таким именем уже существует. Перезаписать?",
+    confirmDelete: "Удалить пресет",
+  },
+} as const;
