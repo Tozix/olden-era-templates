@@ -72,6 +72,9 @@ jobs:
           tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           args: ${{ matrix.settings.args }}
           releaseName: "Olden Era Templates ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
-          releaseBody: "Десктопный генератор шаблонов для Heroes of Might and Magic: Olden Era (Windows / macOS / Linux)."
+          releaseBody: |
+            Десктопный генератор шаблонов для Heroes of Might and Magic: Olden Era (Windows / macOS / Linux).
+
+            **macOS:** сборки не нотаризованы Apple, поэтому при первом запуске скачанного приложения macOS может написать, что оно «повреждено». На самом деле оно целое — так Gatekeeper реагирует на отсутствие подписи Apple Developer. Обход: «Системные настройки → Конфиденциальность и безопасность → Открыть в любом случае», либо `xattr -dr com.apple.quarantine /Applications/OldenEraTemplates.app`.
           releaseDraft: false
           prerelease: false
